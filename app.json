@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "fed",
-    "slug": "fed",
+    "name": "MiBamigrash",
+    "slug": "mibamigrash",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "fed",
-    "userInterfaceStyle": "automatic",
+    "scheme": "mibamigrash",
+    "userInterfaceStyle": "dark",
     "ios": {
       "icon": "./assets/expo.icon"
     },
