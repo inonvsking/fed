@@ -26,6 +26,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#00FF87',
     gap: 4,
+    flexShrink: 0,
   },
   flagText: {
     fontSize: 14,

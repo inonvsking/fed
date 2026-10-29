@@ -38,11 +38,31 @@ export default function ExploreScreen() {
     t,
     language,
     isRTL,
+    firebaseUser,
+    isFirebaseConnected,
+    signInWithEmail,
+    signUpWithEmail,
+    signOutUser,
   } = usePitches();
 
   const [nicknameInput, setNicknameInput] = useState(userCard.nickname);
   const [favoriteClubInput, setFavoriteClubInput] = useState(userCard.favoriteClub);
+  const [prevNickname, setPrevNickname] = useState(userCard.nickname);
+  const [prevClub, setPrevClub] = useState(userCard.favoriteClub);
+
+  if (prevNickname !== userCard.nickname || prevClub !== userCard.favoriteClub) {
+    setPrevNickname(userCard.nickname);
+    setPrevClub(userCard.favoriteClub);
+    setNicknameInput(userCard.nickname);
+    setFavoriteClubInput(userCard.favoriteClub);
+  }
+
   const [broadcastSent, setBroadcastSent] = useState(false);
+  const [showAuthForm, setShowAuthForm] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
 
   const handlePositionChange = (pos: PlayerPosition) => {
     updateBallerCard({ position: pos });
@@ -84,6 +104,46 @@ export default function ExploreScreen() {
     });
     setBroadcastSent(true);
     setTimeout(() => setBroadcastSent(false), 5000);
+  };
+
+  const handleEmailSignIn = async () => {
+    if (!email || !password) return;
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      await signInWithEmail(email.trim(), password);
+      setShowAuthForm(false);
+      setEmail('');
+      setPassword('');
+    } catch (err: any) {
+      setAuthError(err?.message || 'Failed to sign in');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleEmailSignUp = async () => {
+    if (!email || !password) return;
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      await signUpWithEmail(email.trim(), password);
+      setShowAuthForm(false);
+      setEmail('');
+      setPassword('');
+    } catch (err: any) {
+      setAuthError(err?.message || 'Failed to sign up');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOutUser();
+    } catch (err: any) {
+      console.warn('Sign out error:', err);
+    }
   };
 
   return (
@@ -260,22 +320,131 @@ export default function ExploreScreen() {
           </Text>
           <View style={[styles.statsGridRow, isRTL && styles.rowRTL]}>
             <View style={styles.statBox}>
-              <Text style={styles.statBoxNumber}>14</Text>
+              <Text style={styles.statBoxNumber}>{userCard.careerStats?.matches ?? 0}</Text>
               <Text style={styles.statBoxLabel}>{t('statMatches')}</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statBoxNumber}>28</Text>
+              <Text style={styles.statBoxNumber}>{userCard.careerStats?.goals ?? 0}</Text>
               <Text style={styles.statBoxLabel}>{t('statGoals')}</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statBoxNumber}>6</Text>
+              <Text style={styles.statBoxNumber}>{userCard.careerStats?.mvps ?? 0}</Text>
               <Text style={styles.statBoxLabel}>{t('statMvps')}</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statBoxNumber}>4</Text>
+              <Text style={styles.statBoxNumber}>{userCard.careerStats?.cleanSheets ?? 0}</Text>
               <Text style={styles.statBoxLabel}>{t('statCleanSheets')}</Text>
             </View>
           </View>
+        </View>
+
+        {/* Firebase Cloud Sync & Baller Account Card */}
+        <View style={styles.cloudSection}>
+          <View style={[styles.cloudHeaderRow, isRTL && styles.rowRTL]}>
+            <View style={[styles.cloudTitleWrap, isRTL && styles.rowRTL]}>
+              <Ionicons name="cloud-done" size={20} color="#00FF87" />
+              <Text style={styles.cloudTitle}>{t('cloudSyncTitle')}</Text>
+            </View>
+            <View style={[styles.cloudStatusBadge, !isFirebaseConnected && styles.cloudStatusOffline]}>
+              <View
+                style={[
+                  styles.cloudStatusDot,
+                  { backgroundColor: isFirebaseConnected ? '#00FF87' : '#8B9BB4' },
+                ]}
+              />
+              <Text style={styles.cloudStatusText}>
+                {isFirebaseConnected ? t('firebaseLive') : t('firebaseOffline')}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={[styles.cloudDesc, isRTL && styles.textRTL]}>{t('cloudSyncDesc')}</Text>
+
+          <View style={styles.cloudAccountInfo}>
+            <View style={[styles.accountInfoRow, isRTL && styles.rowRTL]}>
+              <Text style={styles.accountInfoLabel}>{t('playerUid')}:</Text>
+              <Text style={styles.accountInfoValue} numberOfLines={1} ellipsizeMode="middle">
+                {firebaseUser ? firebaseUser.uid : 'Offline'}
+              </Text>
+            </View>
+            <View style={[styles.accountInfoRow, isRTL && styles.rowRTL]}>
+              <Text style={styles.accountInfoLabel}>{t('signedInAs')}:</Text>
+              <Text style={styles.accountInfoValue}>
+                {firebaseUser?.isAnonymous
+                  ? t('anonymousBaller')
+                  : firebaseUser?.email || t('anonymousBaller')}
+              </Text>
+            </View>
+          </View>
+
+          {firebaseUser?.isAnonymous ? (
+            <View style={styles.authActionArea}>
+              {!showAuthForm ? (
+                <Pressable
+                  onPress={() => setShowAuthForm(true)}
+                  style={({ pressed }) => [styles.linkAccountBtn, pressed && styles.btnPressed]}>
+                  <Ionicons name="mail-outline" size={16} color="#00FF87" />
+                  <Text style={styles.linkAccountBtnText}>{t('emailAuth')}</Text>
+                </Pressable>
+              ) : (
+                <View style={styles.authFormWrap}>
+                  <Text style={[styles.inputLabel, isRTL && styles.textRTL]}>{t('emailAddress')}</Text>
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="baller@example.com"
+                    placeholderTextColor="#6B7D96"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    style={[styles.textInput, isRTL && styles.textRTL]}
+                  />
+
+                  <Text style={[styles.inputLabel, { marginTop: 8 }, isRTL && styles.textRTL]}>
+                    {t('password')}
+                  </Text>
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="••••••••"
+                    placeholderTextColor="#6B7D96"
+                    secureTextEntry
+                    style={[styles.textInput, isRTL && styles.textRTL]}
+                  />
+
+                  {authError && <Text style={styles.authErrorText}>{authError}</Text>}
+
+                  <View style={[styles.authBtnRow, isRTL && styles.rowRTL]}>
+                    <Pressable
+                      onPress={handleEmailSignIn}
+                      disabled={authLoading}
+                      style={({ pressed }) => [styles.authSubmitBtn, pressed && styles.btnPressed]}>
+                      <Text style={styles.authSubmitBtnText}>{t('signInBtn')}</Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={handleEmailSignUp}
+                      disabled={authLoading}
+                      style={({ pressed }) => [styles.authSecondaryBtn, pressed && styles.btnPressed]}>
+                      <Text style={styles.authSecondaryBtnText}>{t('signUpBtn')}</Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => setShowAuthForm(false)}
+                      style={styles.authCancelBtn}>
+                      <Ionicons name="close" size={18} color="#8B9BB4" />
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+            </View>
+          ) : (
+            <Pressable
+              onPress={handleSignOut}
+              style={({ pressed }) => [styles.signOutBtn, pressed && styles.btnPressed]}>
+              <Ionicons name="log-out-outline" size={16} color="#FF4D4D" />
+              <Text style={styles.signOutBtnText}>{t('signOut')}</Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -309,9 +478,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+    gap: 10,
   },
   headerTextWrap: {
     flex: 1,
+    minWidth: 0,
   },
   headerTitle: {
     color: '#FFD700',
@@ -560,5 +731,174 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginTop: 2,
     letterSpacing: 0.5,
+  },
+  cloudSection: {
+    backgroundColor: '#0D1524',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#1A2942',
+  },
+  cloudHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  cloudTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cloudTitle: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  cloudStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0A2518',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#00FF8740',
+  },
+  cloudStatusOffline: {
+    backgroundColor: '#1E293B',
+    borderColor: '#334155',
+  },
+  cloudStatusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  cloudStatusText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  cloudDesc: {
+    color: '#8B9BB4',
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 12,
+  },
+  cloudAccountInfo: {
+    backgroundColor: '#141F33',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#203250',
+    gap: 6,
+  },
+  accountInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  accountInfoLabel: {
+    color: '#8B9BB4',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  accountInfoValue: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    maxWidth: '65%',
+  },
+  authActionArea: {
+    marginTop: 12,
+  },
+  linkAccountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#16283D',
+    borderWidth: 1,
+    borderColor: '#00FF87',
+    borderRadius: 10,
+    paddingVertical: 10,
+  },
+  linkAccountBtnText: {
+    color: '#00FF87',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  authFormWrap: {
+    backgroundColor: '#121A2B',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#1D2E49',
+    marginTop: 6,
+  },
+  authErrorText: {
+    color: '#FF4D4D',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 6,
+  },
+  authBtnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  authSubmitBtn: {
+    flex: 1,
+    backgroundColor: '#00FF87',
+    borderRadius: 8,
+    paddingVertical: 9,
+    alignItems: 'center',
+  },
+  authSubmitBtnText: {
+    color: '#080E1A',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  authSecondaryBtn: {
+    flex: 1,
+    backgroundColor: '#1F2F47',
+    borderRadius: 8,
+    paddingVertical: 9,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2A4163',
+  },
+  authSecondaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  authCancelBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#182438',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#2B1214',
+    borderWidth: 1,
+    borderColor: '#FF4D4D50',
+    borderRadius: 10,
+    paddingVertical: 10,
+    marginTop: 12,
+  },
+  signOutBtnText: {
+    color: '#FF6B6B',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

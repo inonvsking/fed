@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,9 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
-import { Pitch, ShoutCategory } from '@/types/pitch';
+import { Pitch, PitchMessage, ShoutCategory } from '@/types/pitch';
 import { usePitches } from '@/context/PitchesContext';
+import { subscribeToPitchMessages } from '@/services/pitchService';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface PitchDetailModalProps {
@@ -21,9 +22,25 @@ interface PitchDetailModalProps {
 }
 
 export function PitchDetailModal({ pitch, visible, onClose }: PitchDetailModalProps) {
-  const { userCheckIn, checkIn, checkOut, sendShout, t, language, isRTL } = usePitches();
+  const { userCard, firebaseUser, userCheckIn, checkIn, checkOut, sendShout, t, language, isRTL } =
+    usePitches();
   const [customText, setCustomText] = useState('');
   const [activeTab, setActiveTab] = useState<'players' | 'chat'>('players');
+  const [liveMessages, setLiveMessages] = useState<PitchMessage[]>([]);
+  const pitchId = pitch?.id;
+
+  useEffect(() => {
+    if (!pitchId || !visible) return;
+    const unsubscribe = subscribeToPitchMessages(pitchId, (msgs) => {
+      if (msgs && msgs.length > 0) {
+        setLiveMessages(msgs);
+      }
+    });
+    return () => {
+      unsubscribe();
+      setLiveMessages([]);
+    };
+  }, [pitchId, visible]);
 
   if (!pitch) return null;
 
@@ -156,7 +173,7 @@ export function PitchDetailModal({ pitch, visible, onClose }: PitchDetailModalPr
               color={activeTab === 'chat' ? '#00FF87' : '#8B9BB4'}
             />
             <Text style={[styles.tabNavText, activeTab === 'chat' && styles.tabNavTextActive]}>
-              {t('tabLiveChat')} ({pitch.messages.length})
+              {t('tabLiveChat')} ({liveMessages.length > 0 ? liveMessages.length : pitch.messages.length})
             </Text>
           </Pressable>
         </View>
@@ -283,42 +300,53 @@ export function PitchDetailModal({ pitch, visible, onClose }: PitchDetailModalPr
             <ScrollView
               style={styles.messagesScroll}
               contentContainerStyle={styles.messagesContent}>
-              {pitch.messages.map((msg) => {
-                const isMine = msg.senderId === 'me';
-                return (
-                  <View
-                    key={msg.id}
-                    style={[
-                      styles.messageBubbleWrap,
-                      isMine ? styles.myMsgWrap : styles.otherMsgWrap,
-                    ]}>
-                    {!isMine && (
-                      <View style={styles.chatAvatar}>
-                        <Text style={styles.chatAvatarText}>{msg.senderAvatar}</Text>
-                      </View>
-                    )}
-
+              {(liveMessages.length > 0 ? liveMessages : pitch.messages).length === 0 ? (
+                <View style={styles.emptyMessagesBox}>
+                  <Text style={styles.emptyMessagesIcon}>💬</Text>
+                  <Text style={styles.emptyMessagesTitle}>{t('noShoutsYet')}</Text>
+                  <Text style={styles.emptyMessagesDesc}>{t('beFirstShout')}</Text>
+                </View>
+              ) : (
+                (liveMessages.length > 0 ? liveMessages : pitch.messages).map((msg) => {
+                  const isMine =
+                    msg.senderId === userCard.id ||
+                    msg.senderId === firebaseUser?.uid ||
+                    msg.senderId === 'me';
+                  return (
                     <View
+                      key={msg.id}
                       style={[
-                        styles.messageBubble,
-                        isMine ? styles.myMessageBubble : styles.otherMessageBubble,
-                        msg.isQuickShout && styles.quickShoutBubble,
+                        styles.messageBubbleWrap,
+                        isMine ? styles.myMsgWrap : styles.otherMsgWrap,
                       ]}>
-                      <View style={[styles.chatHeader, isRTL && styles.rowRTL]}>
-                        <Text style={styles.chatSenderName}>{msg.senderName}</Text>
-                        <View style={styles.chatPosPill}>
-                          <Text style={styles.chatPosText}>{msg.senderPosition}</Text>
+                      {!isMine && (
+                        <View style={styles.chatAvatar}>
+                          <Text style={styles.chatAvatarText}>{msg.senderAvatar}</Text>
                         </View>
-                        <Text style={styles.chatTime}>{msg.timestamp}</Text>
-                      </View>
+                      )}
 
-                      <Text style={[styles.chatMessageText, isRTL && styles.textRTL]}>
-                        {msg.text}
-                      </Text>
+                      <View
+                        style={[
+                          styles.messageBubble,
+                          isMine ? styles.myMessageBubble : styles.otherMessageBubble,
+                          msg.isQuickShout && styles.quickShoutBubble,
+                        ]}>
+                        <View style={[styles.chatHeader, isRTL && styles.rowRTL]}>
+                          <Text style={styles.chatSenderName}>{msg.senderName}</Text>
+                          <View style={styles.chatPosPill}>
+                            <Text style={styles.chatPosText}>{msg.senderPosition}</Text>
+                          </View>
+                          <Text style={styles.chatTime}>{msg.timestamp}</Text>
+                        </View>
+
+                        <Text style={[styles.chatMessageText, isRTL && styles.textRTL]}>
+                          {msg.text}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                );
-              })}
+                  );
+                })
+              )}
             </ScrollView>
 
             {/* Custom Shout Input */}
@@ -774,6 +802,27 @@ const styles = StyleSheet.create({
   messagesContent: {
     padding: 14,
     gap: 10,
+  },
+  emptyMessagesBox: {
+    alignItems: 'center',
+    paddingVertical: 36,
+    paddingHorizontal: 20,
+  },
+  emptyMessagesIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  emptyMessagesTitle: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  emptyMessagesDesc: {
+    color: '#8B9BB4',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 16,
   },
   messageBubbleWrap: {
     flexDirection: 'row',

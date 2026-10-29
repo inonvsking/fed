@@ -6,7 +6,7 @@ export const translations = {
     appName: 'מי במגרש?',
     appSubname: 'MiBamigrash',
     tagline: 'רדאר מגרשים חי ומציאת משחקי כדורגל',
-    radarPing: 'פינג רדאר',
+    radarPing: 'רענון רדאר',
 
     // Ticker & Stats
     ballersOnPitch: 'שחקנים במגרשים עכשיו',
@@ -63,6 +63,8 @@ export const translations = {
     needPlayersTitle: '📢 צריכים שחקנים עכשיו?',
     needPlayersSubtitle: 'שלח צעקה חיה ברדאר כדי להזמין עוד שחקנים למגרש!',
     sendShoutPlaceholder: 'שלח הודעה / צעקה למגרש...',
+    noShoutsYet: 'אין צעקות או הודעות עדיין',
+    beFirstShout: 'שלח צעקה ראשונה כדי לאסוף שחקנים למגרש!',
 
     // Quick Shouts
     shoutNeedOne: 'צריכים +1 ל-5 על 5! ⚽',
@@ -106,13 +108,26 @@ export const translations = {
     // Tabs
     tabPitches: 'מגרשים',
     tabBallerCard: 'כרטיס שחקן',
+    firebaseLive: 'ענן חי 🟢',
+    firebaseOffline: 'לא מקוון ⚪',
+    cloudSyncTitle: 'סנכרון ענן Firebase',
+    cloudSyncDesc: 'הכרטיס שלך והנתונים נשמרים בענן של Firebase בזמן אמת.',
+    playerUid: 'מזהה שחקן בענן',
+    signedInAs: 'מחובר כ',
+    anonymousBaller: 'שחקן אורח (אנונימי)',
+    emailAuth: 'התחברות באימייל',
+    emailAddress: 'כתובת אימייל',
+    password: 'סיסמה',
+    signInBtn: 'התחבר',
+    signUpBtn: 'צור חשבון',
+    signOut: 'התנתקות',
   },
   en: {
     // App Header & Branding
     appName: 'MiBamigrash',
     appSubname: 'מי במגרש?',
     tagline: 'Live Soccer Pitch Radar & Match Finder',
-    radarPing: 'Radar Ping',
+    radarPing: 'Refresh Radar',
 
     // Ticker & Stats
     ballersOnPitch: 'ballers on local pitches now',
@@ -169,6 +184,8 @@ export const translations = {
     needPlayersTitle: '📢 NEED PLAYERS RIGHT NOW?',
     needPlayersSubtitle: 'Send a live shout to summon more ballers to this field!',
     sendShoutPlaceholder: 'Send a shout to this pitch...',
+    noShoutsYet: 'No pitch shouts yet',
+    beFirstShout: 'Send the first shout to rally players or check the pitch!',
 
     // Quick Shouts
     shoutNeedOne: 'Need +1 for 5v5! ⚽',
@@ -212,6 +229,19 @@ export const translations = {
     // Tabs
     tabPitches: 'Pitches',
     tabBallerCard: 'Baller Card',
+    firebaseLive: 'Cloud Live 🟢',
+    firebaseOffline: 'Offline ⚪',
+    cloudSyncTitle: 'Firebase Cloud Sync',
+    cloudSyncDesc: 'Your card and match stats sync to Firebase Cloud in real-time.',
+    playerUid: 'Cloud Player ID',
+    signedInAs: 'Signed in as',
+    anonymousBaller: 'Guest Baller (Instant Anonymous)',
+    emailAuth: 'Email Authentication',
+    emailAddress: 'Email Address',
+    password: 'Password',
+    signInBtn: 'Sign In',
+    signUpBtn: 'Create Account',
+    signOut: 'Sign Out',
   },
 };
 

@@ -27,9 +27,10 @@ export default function PitchesScreen() {
     setFilter,
     searchQuery,
     setSearchQuery,
-    triggerSimulatedActivity,
+    refreshRadar,
     t,
     isRTL,
+    isFirebaseConnected,
   } = usePitches();
 
   const [selectedPitch, setSelectedPitch] = useState<Pitch | null>(null);
@@ -74,26 +75,44 @@ export default function PitchesScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.container}>
         {/* Top App Header */}
-        <View style={[styles.header, isRTL && styles.rowRTL]}>
-          <View style={[styles.headerLeft, isRTL && styles.alignRTL]}>
+        <View style={styles.header}>
+          {/* Top Row: App Brand & Language Toggle */}
+          <View style={[styles.headerTopRow, isRTL && styles.rowRTL]}>
             <View style={[styles.brandTitleRow, isRTL && styles.rowRTL]}>
               <Text style={styles.logoEmoji}>⚽</Text>
-              <Text style={styles.appTitle}>{t('appName')}</Text>
+              <Text
+                style={[styles.appTitle, isRTL && styles.textRTL]}
+                numberOfLines={1}
+                ellipsizeMode="tail">
+                {t('appName')}
+              </Text>
               <View style={styles.hebrewTitleBadge}>
-                <Text style={styles.hebrewTitleText}>{t('appSubname')}</Text>
+                <Text style={styles.hebrewTitleText} numberOfLines={1}>
+                  {t('appSubname')}
+                </Text>
               </View>
             </View>
-            <Text style={[styles.tagline, isRTL && styles.textRTL]}>{t('tagline')}</Text>
+
+            <LanguageToggle />
           </View>
 
-          {/* Right Header Controls: Language Toggle & Radar Ping */}
-          <View style={[styles.headerRightActions, isRTL && styles.rowRTL]}>
-            <LanguageToggle />
+          {/* Sub Row: Tagline & Radar Ping Action */}
+          <View style={[styles.headerSubRow, isRTL && styles.rowRTL]}>
+            <Text
+              style={[styles.tagline, isRTL && styles.textRTL]}
+              numberOfLines={1}
+              ellipsizeMode="tail">
+              {t('tagline')}
+            </Text>
 
             <Pressable
-              onPress={() => triggerSimulatedActivity(selectedPitch?.id)}
-              style={({ pressed }) => [styles.pulseBtn, isRTL && styles.rowRTL, pressed && styles.btnPressed]}>
-              <Ionicons name="flash" size={13} color="#080E1A" />
+              onPress={() => refreshRadar()}
+              style={({ pressed }) => [
+                styles.pulseBtn,
+                isRTL && styles.rowRTL,
+                pressed && styles.btnPressed,
+              ]}>
+              <Ionicons name="refresh" size={12} color="#080E1A" />
               <Text style={styles.pulseBtnText}>{t('radarPing')}</Text>
             </Pressable>
           </View>
@@ -114,6 +133,18 @@ export default function PitchesScreen() {
           <View style={[styles.tickerPill, isRTL && styles.rowRTL]}>
             <Text style={styles.tickerText}>
               🔥 <Text style={styles.tickerBold}>{activeMatchesCount}</Text> {t('matchesInProgress')}
+            </Text>
+          </View>
+          <View style={styles.tickerDivider} />
+          <View style={[styles.tickerPill, isRTL && styles.rowRTL]}>
+            <View
+              style={[
+                styles.pulsingDot,
+                { backgroundColor: isFirebaseConnected ? '#00FF87' : '#687B95' },
+              ]}
+            />
+            <Text style={styles.tickerText}>
+              {isFirebaseConnected ? t('firebaseLive') : t('firebaseOffline')}
             </Text>
           </View>
         </View>
@@ -248,14 +279,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#070B14',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#121C2E',
+    gap: 8,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerSubRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
   },
   rowRTL: {
     flexDirection: 'row-reverse',
@@ -266,22 +307,22 @@ const styles = StyleSheet.create({
   textRTL: {
     textAlign: 'right',
   },
-  headerLeft: {
-    flex: 1,
-  },
   brandTitleRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    minWidth: 0,
   },
   logoEmoji: {
     fontSize: 22,
   },
   appTitle: {
     color: '#FFFFFF',
-    fontSize: 21,
+    fontSize: 20,
     fontWeight: '900',
     letterSpacing: 0.5,
+    flexShrink: 1,
   },
   hebrewTitleBadge: {
     backgroundColor: '#053120',
@@ -290,6 +331,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#00FF87',
+    flexShrink: 0,
   },
   hebrewTitleText: {
     color: '#00FF87',
@@ -300,21 +342,17 @@ const styles = StyleSheet.create({
     color: '#8B9BB4',
     fontSize: 11,
     fontWeight: '600',
-    marginTop: 2,
-  },
-  headerRightActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    flex: 1,
   },
   pulseBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#00FF87',
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 10,
     gap: 4,
+    flexShrink: 0,
   },
   pulseBtnText: {
     color: '#080E1A',

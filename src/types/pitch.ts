@@ -11,6 +11,13 @@ export interface PlayerStats {
   phy: number; // Physical
 }
 
+export interface CareerStats {
+  matches: number;
+  goals: number;
+  mvps: number;
+  cleanSheets: number;
+}
+
 export interface PlayerCard {
   id: string;
   name: string;
@@ -21,6 +28,7 @@ export interface PlayerCard {
   avatar: string;
   favoriteClub: string;
   cardTier: CardTier;
+  careerStats?: CareerStats;
 }
 
 export interface PitchPlayer {
